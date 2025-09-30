@@ -14,7 +14,7 @@
 
 #define BUFFER_LENGTH_MS  10 //BUFFER长度10ms,这里系统中定义的frame含义是一个采样点，避免混淆，用buffer代替通常的frame
 #define REFTIMES_PER_SEC  BUFFER_LENGTH_MS*10000 //BUFFER长度10ms，以100ns为单位
-#define RECORD_SECONDS    10
+#define RECORD_SECONDS    10 //录音时长10秒
 
 void WriteWavFile(const std::wstring& filename, const std::vector<BYTE>& audioData, WAVEFORMATEX* pwfx) {
     std::ofstream out(filename, std::ios::binary);
@@ -69,11 +69,20 @@ int main() {
         pProps->Release();
     }
 
-    IAudioClient* pAudioClient = nullptr;
-    hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+    IAudioClient2* pAudioClient = nullptr;
+    hr = pDevice->Activate(__uuidof(IAudioClient2), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
 
     WAVEFORMATEX* pwfx = nullptr;
     hr = pAudioClient->GetMixFormat(&pwfx);
+	// 设置音频类别
+	AudioClientProperties properties = { };
+	properties.cbSize = sizeof(AudioClientProperties);
+	properties.eCategory = AudioCategory_Other;//default mode
+    //raw模式设置
+    //properties.bIsOffload = FALSE;
+	//properties.Options = AUDCLNT_STREAMOPTIONS_RAW;
+
+	pAudioClient->SetClientProperties(&properties);
 
     std::cout << "Default device info:" << std::endl;
 	std::cout << "Format Tag:" << pwfx->wFormatTag << std::endl;
@@ -85,12 +94,14 @@ int main() {
 	std::cout << "Size: " << pwfx->cbSize << std::endl;
 
     REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
-    hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+    hr = pAudioClient->Initialize(
+        AUDCLNT_SHAREMODE_SHARED,
         0,
         hnsRequestedDuration,
         0,
         pwfx,
-        nullptr);
+        nullptr
+     );
 
     IAudioCaptureClient* pCaptureClient = nullptr;
     hr = pAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&pCaptureClient);
