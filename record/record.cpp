@@ -46,14 +46,34 @@ int main(int argc,char* argv[]) {
 	int recordSeconds = 10; //default record 10 seconds
 	int mode = 1; //default mode
     // 命令行参数解析
-    for (int i = 1; i < argc - 1; ++i) {
-        if ((strcmp(argv[i], "-L") == 0)|| (strcmp(argv[i], "-l") == 0)) {
-            int val = atoi(argv[i + 1]);
-            if (val > 0) recordSeconds = val;
+    if (argc == 2) {
+        if ((strcmp(argv[1], "-H") == 0) || (strcmp(argv[1], "-h") == 0)) {
+            std::cout << "Usage: record.exe [-L length_in_seconds] [-M mode]" << std::endl;
+            std::cout << "  -L : Specify the recording length in seconds (default is 10 seconds)." << std::endl;
+            std::cout << "  -M : Specify the recording mode (default is 1)." << std::endl;
+            std::cout << "       0: RAW mode" << std::endl;
+            std::cout << "       1: Default mode" << std::endl;
+            std::cout << "       2: Communications mode" << std::endl;
+            std::cout << "       3: Speech mode" << std::endl;
+            return 0;
+
         }
-        if ((strcmp(argv[i], "-M") == 0) || (strcmp(argv[i], "-m") == 0)) {
-            int val = atoi(argv[i + 1]);
-            if (val >= 0) mode = val;
+        else
+        {
+			std::cerr << "please check the argument: " << argv[1] << std::endl;
+			return -1;
+        }
+    }
+    else {
+        for (int i = 1; i < argc - 1; ++i) {
+            if ((strcmp(argv[i], "-L") == 0) || (strcmp(argv[i], "-l") == 0)) {
+                int val = atoi(argv[i + 1]);
+                if (val > 0) recordSeconds = val;
+            }
+            if ((strcmp(argv[i], "-M") == 0) || (strcmp(argv[i], "-m") == 0)) {
+                int val = atoi(argv[i + 1]);
+                if (val >= 0) mode = val;
+            }
         }
     }
 
@@ -99,7 +119,7 @@ int main(int argc,char* argv[]) {
         properties.Options = AUDCLNT_STREAMOPTIONS_RAW;
 		break;
 	case 1:
-		properties.eCategory = AudioCategory_Other;//default mode
+		properties.eCategory = AudioCategory_Other;
 		break;
 	case 2:
 		properties.eCategory = AudioCategory_Communications;
