@@ -14,7 +14,6 @@
 
 #define BUFFER_LENGTH_MS  10 //BUFFER长度10ms,这里系统中定义的frame含义是一个采样点，避免混淆，用buffer代替通常的frame
 #define REFTIMES_PER_SEC  BUFFER_LENGTH_MS*10000 //BUFFER长度10ms，以100ns为单位
-#define RECORD_SECONDS    10 //录音时长10秒
 
 void WriteWavFile(const std::wstring& filename, const std::vector<BYTE>& audioData, WAVEFORMATEX* pwfx) {
     std::ofstream out(filename, std::ios::binary);
@@ -42,7 +41,22 @@ void WriteWavFile(const std::wstring& filename, const std::vector<BYTE>& audioDa
     out.close();
 }
 
-int main() {
+int main(int argc,char* argv[]) {
+
+	int recordSeconds = 10; //default record 10 seconds
+	int mode = 1; //default mode
+    // 命令行参数解析
+    for (int i = 1; i < argc - 1; ++i) {
+        if ((strcmp(argv[i], "-L") == 0)|| (strcmp(argv[i], "-l") == 0)) {
+            int val = atoi(argv[i + 1]);
+            if (val > 0) recordSeconds = val;
+        }
+        if ((strcmp(argv[i], "-M") == 0) || (strcmp(argv[i], "-m") == 0)) {
+            int val = atoi(argv[i + 1]);
+            if (val >= 0) mode = val;
+        }
+    }
+
     HRESULT hr = CoInitialize(nullptr);
 
     IMMDeviceEnumerator* pEnumerator = nullptr;
@@ -77,11 +91,26 @@ int main() {
 	// 设置音频类别
 	AudioClientProperties properties = { };
 	properties.cbSize = sizeof(AudioClientProperties);
-	properties.eCategory = AudioCategory_Other;//default mode
-    //raw模式设置
-    //properties.bIsOffload = FALSE;
-	//properties.Options = AUDCLNT_STREAMOPTIONS_RAW;
-
+    switch (mode)
+    {
+	case 0://RAW mode
+        properties.eCategory = AudioCategory_Other;
+        properties.bIsOffload = FALSE;
+        properties.Options = AUDCLNT_STREAMOPTIONS_RAW;
+		break;
+	case 1:
+		properties.eCategory = AudioCategory_Other;//default mode
+		break;
+	case 2:
+		properties.eCategory = AudioCategory_Communications;
+		break;
+	case 3:
+		properties.eCategory = AudioCategory_Speech;
+		break;
+    default:
+        properties.eCategory = AudioCategory_Other;//default mode
+        break;
+    }
 	pAudioClient->SetClientProperties(&properties);
 
     std::cout << "Default device info:" << std::endl;
@@ -92,6 +121,8 @@ int main() {
     std::cout << "Block Align: " << pwfx->nBlockAlign << std::endl;
     std::cout << "Bits per Sample: " << pwfx->wBitsPerSample << std::endl;
 	std::cout << "Size: " << pwfx->cbSize << std::endl;
+	std::cout << "Recording Mode: " << mode << std::endl;
+	std::cout << "Recording Length: " << recordSeconds << " seconds" << std::endl;
 
     REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
     hr = pAudioClient->Initialize(
@@ -112,7 +143,7 @@ int main() {
     UINT32 packetLength = 0;
 
 	
-	long TotalFrames = RECORD_SECONDS * pwfx->nSamplesPerSec;
+	long TotalFrames = recordSeconds * pwfx->nSamplesPerSec;
     long CurrentFrames = 0;
     std::cout << "start recording..." << std::endl;
 
