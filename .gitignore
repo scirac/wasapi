@@ -362,5 +362,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 #record files
-./record/*.wav
-./record/*.pkf
+record/*.wav
+record/*.pkf
